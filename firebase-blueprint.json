@@ -1,0 +1,268 @@
+{
+  "entities": {
+    "Property": {
+      "title": "Property",
+      "description": "A real estate apartment, residential plotted layout, or commercial development managed by Shri Durga Developers & Promoters.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Project title."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Apartments", "Layouts", "Commercial"],
+          "description": "Property typology."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Ongoing", "Completed"],
+          "description": "Development stage."
+        },
+        "location": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140,
+          "description": "Hubballi/Dharwad neighborhood."
+        },
+        "highlightMetric": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Primary architectural spec (e.g. G+4 Floors or 30 Ft Wide Roads)."
+        },
+        "secondaryMetric": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Secondary inventory scale (e.g. 40 Flats or 30x40 Sq Ft)."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500,
+          "description": "Concise public summary."
+        },
+        "overview": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1500,
+          "description": "Full dossier architectural overview."
+        },
+        "address": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 240,
+          "description": "Official site address."
+        },
+        "specifications": {
+          "type": "array",
+          "description": "Up to 12 key specifications."
+        },
+        "transitHighlights": {
+          "type": "array",
+          "description": "Up to 8 nearby landmark distances."
+        },
+        "imageKey": {
+          "type": "string",
+          "enum": [
+            "hero",
+            "heroTwilightApartments",
+            "heroPlottedAvenue",
+            "heroCommercialPlaza",
+            "apartments",
+            "layouts",
+            "commercial"
+          ],
+          "description": "Key referencing a verified architectural image asset."
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "UID of the admin who created the property."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "name",
+        "category",
+        "status",
+        "location",
+        "highlightMetric",
+        "secondaryMetric",
+        "summary",
+        "overview",
+        "address",
+        "specifications",
+        "transitHighlights",
+        "imageKey",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Customer contact enquiry, site visit request, or career application stored permanently for admin review.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["contact", "site_visit", "career"],
+          "description": "Enquiry intake channel."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100,
+          "description": "Sender full name."
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 25,
+          "description": "Sender phone number."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120,
+          "description": "Sender email address."
+        },
+        "projectOrRole": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 140,
+          "description": "Selected project name or job role."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "Property category or experience level."
+        },
+        "preferredDate": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 40,
+          "description": "Optional preferred site visit date."
+        },
+        "message": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1500,
+          "description": "Customer message or candidate summary."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["new", "contacted", "scheduled", "closed"],
+          "description": "Admin follow-up workflow state."
+        },
+        "adminNotes": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1000,
+          "description": "Internal admin follow-up notes."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of enquiry submission."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last status update."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "phone",
+        "email",
+        "projectOrRole",
+        "category",
+        "preferredDate",
+        "message",
+        "status",
+        "adminNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "Newsletter subscriber email stored for project launch updates.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 120,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+          "description": "Subscriber email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of subscription."
+        }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator record for Shri Durga Developers Admin Panel.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 120,
+          "description": "Admin email address."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"],
+          "description": "RBAC role identifier."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin access was granted."
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/properties/{propertyId}": {
+      "schema": { "$ref": "#/entities/Property" },
+      "description": "Publicly readable real estate listings created and managed exclusively by verified admins."
+    },
+    "/enquiries/{enquiryId}": {
+      "schema": { "$ref": "#/entities/Enquiry" },
+      "description": "PII-isolated customer enquiries, site visits, and job applications; public create-only, admin read/update/delete."
+    },
+    "/subscribers/{subscriberId}": {
+      "schema": { "$ref": "#/entities/Subscriber" },
+      "description": "Newsletter subscription emails; public create-only, admin read/delete."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Trusted admin role registry protected against self-escalation."
+    }
+  }
+}

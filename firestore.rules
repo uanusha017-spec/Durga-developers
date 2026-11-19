@@ -1,0 +1,266 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global hardened helper primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedEmail() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedEmail() && request.auth.token.email == 'uanusha017@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedEmail() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidProperty(data) {
+      return data.keys().hasAll([
+          'name',
+          'category',
+          'status',
+          'location',
+          'highlightMetric',
+          'secondaryMetric',
+          'summary',
+          'overview',
+          'address',
+          'specifications',
+          'transitHighlights',
+          'imageKey',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'name',
+          'category',
+          'status',
+          'location',
+          'highlightMetric',
+          'secondaryMetric',
+          'summary',
+          'overview',
+          'address',
+          'specifications',
+          'transitHighlights',
+          'imageKey',
+          'createdBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 120
+        && data.category is string && data.category in ['Apartments', 'Layouts', 'Commercial']
+        && data.status is string && data.status in ['Ongoing', 'Completed']
+        && data.location is string && data.location.size() >= 2 && data.location.size() <= 140
+        && data.highlightMetric is string && data.highlightMetric.size() >= 2 && data.highlightMetric.size() <= 80
+        && data.secondaryMetric is string && data.secondaryMetric.size() >= 2 && data.secondaryMetric.size() <= 80
+        && data.summary is string && data.summary.size() >= 10 && data.summary.size() <= 500
+        && data.overview is string && data.overview.size() >= 10 && data.overview.size() <= 1500
+        && data.address is string && data.address.size() >= 5 && data.address.size() <= 240
+        && data.specifications is list && data.specifications.size() >= 1 && data.specifications.size() <= 12
+        && data.specifications[0] is string && data.specifications[0].size() <= 160
+        && data.transitHighlights is list && data.transitHighlights.size() <= 8
+        && (data.transitHighlights.size() == 0 || (data.transitHighlights[0] is string && data.transitHighlights[0].size() <= 160))
+        && data.imageKey is string && data.imageKey in [
+          'hero',
+          'heroTwilightApartments',
+          'heroPlottedAvenue',
+          'heroCommercialPlaza',
+          'apartments',
+          'layouts',
+          'commercial'
+        ]
+        && data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidEnquiry(data) {
+      return data.keys().hasAll([
+          'type',
+          'name',
+          'phone',
+          'email',
+          'projectOrRole',
+          'category',
+          'preferredDate',
+          'message',
+          'status',
+          'adminNotes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'type',
+          'name',
+          'phone',
+          'email',
+          'projectOrRole',
+          'category',
+          'preferredDate',
+          'message',
+          'status',
+          'adminNotes',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.type is string && data.type in ['contact', 'site_visit', 'career']
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 25
+        && data.email is string && data.email.size() <= 120
+        && data.projectOrRole is string && data.projectOrRole.size() <= 140
+        && data.category is string && data.category.size() <= 100
+        && data.preferredDate is string && data.preferredDate.size() <= 40
+        && data.message is string && data.message.size() <= 1500
+        && data.status is string && data.status in ['new', 'contacted', 'scheduled', 'closed']
+        && data.adminNotes is string && data.adminNotes.size() <= 1000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubscriber(data) {
+      return data.keys().hasAll(['email', 'createdAt'])
+        && data.keys().hasOnly(['email', 'createdAt'])
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$')
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['email', 'role', 'createdAt'])
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$')
+        && data.role == 'admin'
+        && data.createdAt is timestamp;
+    }
+
+    // Collection 1: Publicly readable Properties managed exclusively by verified Admins
+    match /properties/{propertyId} {
+      allow get: if isValidId(propertyId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(propertyId)
+        && isValidProperty(incoming())
+        && incoming().createdBy == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isAdmin();
+
+      allow update: if isSignedIn()
+        && isValidId(propertyId)
+        && isValidProperty(incoming())
+        && incoming().createdBy == existing().createdBy
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name',
+          'category',
+          'status',
+          'location',
+          'highlightMetric',
+          'secondaryMetric',
+          'summary',
+          'overview',
+          'address',
+          'specifications',
+          'transitHighlights',
+          'imageKey',
+          'updatedAt'
+        ])
+        && isAdmin();
+
+      allow delete: if isSignedIn() && isValidId(propertyId) && isAdmin();
+    }
+
+    // Collection 2: PII-Isolated Enquiries (Public create-only intake; Admin-only read/manage)
+    match /enquiries/{enquiryId} {
+      allow get: if isSignedIn() && isValidId(enquiryId) && isAdmin();
+      allow list: if isSignedIn() && isAdmin();
+
+      allow create: if isValidId(enquiryId)
+        && isValidEnquiry(incoming())
+        && incoming().status == 'new'
+        && incoming().adminNotes == ''
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isValidId(enquiryId)
+        && isValidEnquiry(incoming())
+        && incoming().type == existing().type
+        && incoming().name == existing().name
+        && incoming().phone == existing().phone
+        && incoming().email == existing().email
+        && incoming().projectOrRole == existing().projectOrRole
+        && incoming().category == existing().category
+        && incoming().preferredDate == existing().preferredDate
+        && incoming().message == existing().message
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'status',
+          'adminNotes',
+          'updatedAt'
+        ])
+        && isAdmin();
+
+      allow delete: if isSignedIn() && isValidId(enquiryId) && isAdmin();
+    }
+
+    // Collection 3: PII-Isolated Newsletter Subscribers (Public create-only; Admin read/delete)
+    match /subscribers/{subscriberId} {
+      allow get: if isSignedIn() && isValidId(subscriberId) && isAdmin();
+      allow list: if isSignedIn() && isAdmin();
+
+      allow create: if isValidId(subscriberId)
+        && isValidSubscriber(incoming())
+        && incoming().createdAt == request.time;
+
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(subscriberId) && isAdmin();
+    }
+
+    // Collection 4: Trusted Admin Role Registry
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (
+        request.auth.uid == adminId || isAdmin()
+      );
+      allow list: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn()
+        && isValidId(adminId)
+        && isValidAdminUser(incoming())
+        && incoming().createdAt == request.time
+        && isAdmin();
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(adminId) && isAdmin();
+    }
+  }
+}
